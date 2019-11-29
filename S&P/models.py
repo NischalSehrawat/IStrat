@@ -91,7 +91,6 @@ class Investor:
             incremental_years = total_years[::increment_in_years]
             years_multiplication_factor = {
                 year: incr_fac**(k) for k, year in enumerate(incremental_years)}
-            print(years_multiplication_factor)
 
         incr_boost = boost_perc  # Assign boost_incr to incr_boost variable
         # List that will store the years when increment has already been applied
@@ -113,7 +112,6 @@ class Investor:
                         # Now increment the amount
                         self.amount = mult_factor * amount
                         years_incr_applied.append(current_year)
-                        print(current_year, self.amount)
                 # If not applying boosting, keep the deposit amount same
                 amount_deposited = self.amount
             else:
