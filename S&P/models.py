@@ -92,7 +92,8 @@ class Investor:
             # Select years when the amount will be doubled. Start from 1 as we won't double the investment from starting year
             incremental_years = total_years[::increment_in_years][1:]
             years_multiplication_factor = {
-                year: (k+1)*incr_fac for k, year in enumerate(incremental_years)}
+                year: incr_fac**(k+1) for k, year in enumerate(incremental_years)}
+            print(years_multiplication_factor)
 
         incr_boost = boost_perc  # Assign boost_incr to incr_boost variable
         # List that will store the years when increment has already been applied
@@ -175,7 +176,7 @@ P2 = Investor()
 p2 = P2.InvestMonthly(amount=200, apply_boost=True, boost_perc=0.15)
 P3 = Investor()
 p3 = P3.InvestMonthly(
-    amount=200, apply_yearly_increment=True, increment_in_years=15, incr_fac=2)
+    amount=200, apply_yearly_increment=True, increment_in_years=5, incr_fac=1.05)
 
 plt.close("all")
 
