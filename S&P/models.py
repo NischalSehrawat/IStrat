@@ -82,26 +82,27 @@ class Investor:
 
         assert amount is not None, "amount cannot be None in monthly investment strategy, please give an amount"
 
-        self.amount = amount
-
         if apply_yearly_increment:
             assert increment_in_years is not None, "increment in years can't be none, please give a value"
             assert incr_fac is not None, "incr_fac can't be none, please give a value"
             assert increment_in_years < Investor.n_years, " increment in years can't be greater than the total number of years"
             total_years = Investor.years  # Get total number of years
             # Select years when the amount will be doubled. Start from 1 as we won't double the investment from starting year
-            incremental_years = total_years[::increment_in_years][1:]
+            incremental_years = total_years[::increment_in_years]
             years_multiplication_factor = {
-                year: incr_fac**(k+1) for k, year in enumerate(incremental_years)}
+                year: incr_fac**(k) for k, year in enumerate(incremental_years)}
             print(years_multiplication_factor)
 
         incr_boost = boost_perc  # Assign boost_incr to incr_boost variable
         # List that will store the years when increment has already been applied
         years_incr_applied = []
 
-        for i in range(Investor.total_points):
+        self.amount = amount
 
+        for i in range(Investor.total_points):
+            # If we are doing only normal monthly investment
             if not apply_boost:
+                # If we are increasing the amount as years go by along with systematic monthly investments
                 if apply_yearly_increment:
                     # Get current year
                     current_year = self.data.loc[i, "Date"].year
@@ -110,8 +111,9 @@ class Investor:
                         # Get the multiplication factor
                         mult_factor = years_multiplication_factor[current_year]
                         # Now increment the amount
-                        self.amount *= mult_factor
+                        self.amount = mult_factor * amount
                         years_incr_applied.append(current_year)
+                        print(current_year, self.amount)
                 # If not applying boosting, keep the deposit amount same
                 amount_deposited = self.amount
             else:
@@ -176,7 +178,7 @@ P2 = Investor()
 p2 = P2.InvestMonthly(amount=200, apply_boost=True, boost_perc=0.15)
 P3 = Investor()
 p3 = P3.InvestMonthly(
-    amount=200, apply_yearly_increment=True, increment_in_years=5, incr_fac=1.05)
+    amount=200, apply_yearly_increment=True, increment_in_years=2, incr_fac=1.05)
 
 plt.close("all")
 
@@ -184,7 +186,7 @@ plt.plot(p1["Asset_Value"], 'r', label="Strategy 1 (Invest Monthly)")
 plt.plot(p1["Total_Investment"], '--r', label="Strategy 1: Total Investment")
 plt.plot(p2["Asset_Value"], 'b', label="Strategy 2 (Apply Monthly Boosting)")
 plt.plot(p2["Total_Investment"], '--b', label="Strategy 2: Total Investment")
-plt.plot(p3["Asset_Value"], 'g', label="Strategy 3 (Double Investment)")
+plt.plot(p3["Asset_Value"], 'g', label="Strategy 3 (5% increase Investment every 1 year)")
 plt.plot(p3["Total_Investment"], '--g', label="Strategy 3: Total Investment")
 
 
