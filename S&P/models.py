@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 class Investor:
     
     data_snp = pd.read_excel("blog.xlsx")
-    total_points = len(data_snp) # Total Data points 
+    total_months = len(data_snp) # Total Data points 
         
     def __init__(self):
         
@@ -45,7 +45,7 @@ class Investor:
         Amount is the value invested monthly, default value being 200
         """
 
-        for i in range(Investor.total_points):
+        for i in range(Investor.total_months):
             # Step 1. Add money to account
             # Update total_investment and available_cash
             self.total_investment+=amount
