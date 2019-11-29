@@ -22,6 +22,7 @@ class Investor:
         self.data = Investor.data_snp # Make a copy of the S&P data
         
         
+        
     def GetAssetValue(self, stock_price):
         # This function is used to update total assets
         asset_value = self.available_cash + stock_price * self.stocks_owned
@@ -29,8 +30,6 @@ class Investor:
     
     def LogData(self, idx, stock_price, stocks_acquired):
         # This function is used to log data to dataframe on any given day = idx
-        
-        # Add data to dataframe
         self.data.loc[idx, "Asset_Value"] = self.GetAssetValue(stock_price)               
         self.data.loc[idx, "Stocks_Owned"] = self.stocks_owned
         self.data.loc[idx, "Stocks_Acquired"] = stocks_acquired            
@@ -39,7 +38,7 @@ class Investor:
 
 
 
-    def Compute_S1(self, amount=200):
+    def InvestMonthly(self, amount=200):
         """
         In this strategy we invest on a fixed day i.e. 1st of every month. 
         
@@ -57,19 +56,17 @@ class Investor:
             
             """
             If the stock price is more than the remaining cash, 
-            then we cannot buy any stock this month. 
+            then we cannot buy any stock this month. So we donot do any updates
             """            
             if self.available_cash < stock_price:
                 '''
                 Since we didn't buy new stocks therefore 
                 new stocks acquired = 0, 
-                and total stocks owned are same as previous month
                 '''
                 stocks_acquired = 0
                 
                 # Log data to the dataframe                
-                self.LogData(i, stock_price, stocks_acquired)
-                    
+                self.LogData(i, stock_price, stocks_acquired)                  
                
             else:                
                 """
@@ -86,11 +83,10 @@ class Investor:
 
                 # Log data to dataframe
                 self.LogData(i, stock_price, stocks_acquired)
-
                 
         return self.data
-
-p = Investor().Compute_S1()    
+    
+p = Investor().InvestMonthly()    
 
 plt.close("all")
 plt.subplot(2,2,1)
