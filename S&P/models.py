@@ -75,30 +75,25 @@ class Investor:
                 # If not applying boosting, keep the deposit amount same
                 amount_deposited = amount
             else:
+                assert 0<boost_perc<=0.25, "Boost Percentage should be between 0 and 0.25"
                 # Get the percentage change in index
                 perc_change = self.data.loc[i, "Percentage_Change"]
                 incr_boost = boost_perc
                 
                 if perc_change >=0:
                     amount_deposited = amount
-                elif -10 <= perc_change < 0 :
-                    # If perc_change is between 0  to -10, keep the amount same
-                    amount_deposited = (1.0 + 0.5 * incr_boost) * amount
-                elif -20 <= perc_change < -10:
-                    # If perc_change is between -10 to -20, increase deposit amount by 10%
+                elif -5 <= perc_change < 0 :
+                    # If perc_change is between 0  to -5, increase deposit amount by 1 * incr_boost
                     amount_deposited = (1.0 + 1 * incr_boost) * amount
-                elif -30 <= perc_change < -20:
-                    # If perc_change is between 20 to 30, increase deposit amount by 20%
+                elif -10 <= perc_change < -5:
+                    # If perc_change is between -10 to -20, increase deposit amount by 2 * incr_boost
                     amount_deposited = (1.0 + 2 * incr_boost) * amount
-                elif -40 <= perc_change < -30:
-                    # If perc_change is between 30 to 40, increase deposit amount by 30%                    
+                elif -15 <= perc_change < -10:
+                    # If perc_change is between 20 to 30, increase deposit amount by 3 * incr_boost
                     amount_deposited = (1.0 + 3 * incr_boost) * amount
-                elif -50 < perc_change < -40:
-                    # If perc_change is between 40 to 50, increase deposit amount by 40%                    
-                    amount_deposited = (1.0 + 4 * incr_boost) * amount
-                elif perc_change <=-50:
-                    # If perc_change is greater than 50 %, increase deposit amount by 50%                                       
-                    amount_deposited = (1.0 + 5 * incr_boost) * amount
+                elif perc_change <-15:
+                    # If perc_change is greater than 15 %, double the deposit                                     
+                    amount_deposited = 2 * amount
                     
             # Step 1. Add money to account
             self.DepositFunds(amount_deposited)
@@ -137,9 +132,18 @@ class Investor:
 
 
 p1 = Investor().InvestMonthly(amount=200, apply_boost=False)
-p2 = Investor().InvestMonthly(amount=200, apply_boost=True, boost_perc = 0.3)
+p2 = Investor().InvestMonthly(amount=200, apply_boost=True, boost_perc = 0.15)
 
-plt.plot(p1["Asset_Value"], label = "Monthly Investment")
-plt.plot(p2["Asset_Value"], label = "Monthly Investment WITH Boosting")
+plt.plot(p1["Asset_Value"], 'r', label = "Strategy 1 (Invest Monthly)")
+plt.plot(p1["Total_Investment"], '--r', label = "Strategy 1: Total Investment")
+plt.plot(p2["Asset_Value"], 'b', label = "Strategy 2 (Apply Monthly Boosting)")
+plt.plot(p2["Total_Investment"], '--b', label = "Strategy 2: Total Investment")
+
 plt.legend(loc = "upper center", fontsize = 14)
+plt.yticks(fontsize = 14)
+plt.ylabel("Amount in $", fontsize = 14)
 
+#%%
+#import seaborn as sns 
+#
+#sns.distplot(p1["Percentage_Change"])
