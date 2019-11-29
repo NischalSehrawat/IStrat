@@ -174,9 +174,12 @@ P1 = Investor()
 p1 = P1.InvestMonthly(amount=200, apply_boost=False)
 P2 = Investor()
 p2 = P2.InvestMonthly(amount=200, apply_boost=True, boost_perc=0.15)
+
+inc_every = 2
+inc_perc = 10
 P3 = Investor()
 p3 = P3.InvestMonthly(
-    amount=200, apply_yearly_increment=True, increment_in_years=2, incr_fac=1.05)
+    amount=200, apply_yearly_increment=True, increment_in_years=inc_every, incr_fac=1 + 0.01*inc_perc)
 
 plt.close("all")
 
@@ -184,7 +187,7 @@ plt.plot(p1["Asset_Value"], 'r', label="Strategy 1 (Invest Monthly)")
 plt.plot(p1["Total_Investment"], '--r', label="Strategy 1: Total Investment")
 plt.plot(p2["Asset_Value"], 'b', label="Strategy 2 (Apply Monthly Boosting)")
 plt.plot(p2["Total_Investment"], '--b', label="Strategy 2: Total Investment")
-plt.plot(p3["Asset_Value"], 'g', label="Strategy 3 (5% increase Investment every 1 year)")
+plt.plot(p3["Asset_Value"], 'g', label=f"Strategy 3 ({inc_perc}% increase Investment every {inc_every} year)")
 plt.plot(p3["Total_Investment"], '--g', label="Strategy 3: Total Investment")
 
 
@@ -196,14 +199,14 @@ plt.ylabel("Amount in $", fontsize=14)
 # %%
 
 # Get number of data points
-n = Investor.total_points - 1
-
-investments = [p1.loc[n, "Total_Investment"],
-               p2.loc[n, "Total_Investment"], p3.loc[n, "Total_Investment"]]
-inv_ret = pd.DataFrame(data=investments, index=[
-                       "S1", "S2", "S3"], columns=["Investments"])
-
-inv_ret["Returns"] = [p1.loc[n, "Asset_Value"],
-                      p2.loc[n, "Asset_Value"], p3.loc[n, "Asset_Value"]]
-
-inv_ret.plot(kind="bar")
+#n = Investor.total_points - 1
+#
+#investments = [p1.loc[n, "Total_Investment"],
+#               p2.loc[n, "Total_Investment"], p3.loc[n, "Total_Investment"]]
+#inv_ret = pd.DataFrame(data=investments, index=[
+#                       "S1", "S2", "S3"], columns=["Investments"])
+#
+#inv_ret["Returns"] = [p1.loc[n, "Asset_Value"],
+#                      p2.loc[n, "Asset_Value"], p3.loc[n, "Asset_Value"]]
+#
+#inv_ret.plot(kind="bar")
