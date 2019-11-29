@@ -7,6 +7,7 @@ Created on Wed Nov 27 20:52:15 2019
 
 import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
 
 
 class Investor:
@@ -15,7 +16,9 @@ class Investor:
     # Get percentage changes
     data_snp["Percentage_Change"] = data_snp["Price_SnP"].pct_change() * 100
     data_snp.fillna(value=0, inplace=True)  # Fill nan values with 0
-    total_months = len(data_snp)  # Total Data points
+    total_points = len(data_snp)  # Total Data points
+    years = sorted(data_snp["Date"].apply(lambda x: x.year).unique().tolist())
+    n_years = len(years)  # Total number of years
 
     def __init__(self):
 
@@ -23,6 +26,14 @@ class Investor:
         self.available_cash = 0  # Cash remaining after purchasing
         self.total_investment = 0  # Total money invested till date
         self.data = Investor.data_snp.copy()  # Make a copy of the S&P data
+
+    def GetReturnRatio(self):
+
+        num_el = len(self.data)  # Number of elements in the dataset
+        # Return on investment ratio
+        roi_ratio = self.data.loc[num_el - 1, "Asset_Value"] / \
+            self.data.loc[num_el - 1, "Total_Investment"]
+        return np.round(roi_ratio, 2)
 
     def GetAssetValue(self, stock_price):
         # This function is used to update total assets
@@ -61,7 +72,7 @@ class Investor:
         self.total_investment += amount
         self.available_cash += amount
 
-    def InvestMonthly(self, amount=200, apply_boost=False, boost_perc = 0.1):
+    def InvestMonthly(self, amount=200, apply_boost=False, boost_perc=1e-12, apply_yearly_increment=False, increment_in_years=None, incr_fac=None):
         """
         In this strategy we invest on a fixed day i.e. 1st of every month.
         Amount is the value invested monthly, default value being 200
@@ -69,32 +80,59 @@ class Investor:
         invested per month if the index goes down. Default is False
         """
 
-        for i in range(Investor.total_months):
+        assert amount is not None, "amount cannot be None in monthly investment strategy, please give an amount"
+
+        self.amount = amount
+
+        if apply_yearly_increment:
+            assert increment_in_years is not None, "increment in years can't be none, please give a value"
+            assert incr_fac is not None, "incr_fac can't be none, please give a value"
+            assert increment_in_years < Investor.n_years, " increment in years can't be greater than the total number of years"
+            total_years = Investor.years  # Get total number of years
+            # Select years when the amount will be doubled. Start from 1 as we won't double the investment from starting year
+            incremental_years = total_years[::increment_in_years][1:]
+            years_multiplication_factor = {
+                year: (k+1)*incr_fac for k, year in enumerate(incremental_years)}
+
+        incr_boost = boost_perc  # Assign boost_incr to incr_boost variable
+        # List that will store the years when increment has already been applied
+        years_incr_applied = []
+
+        for i in range(Investor.total_points):
 
             if not apply_boost:
+                if apply_yearly_increment:
+                    # Get current year
+                    current_year = self.data.loc[i, "Date"].year
+                    # Check if the year is in the years when the amount is to be doubled
+                    if current_year in years_multiplication_factor and current_year not in years_incr_applied:
+                        # Get the multiplication factor
+                        mult_factor = years_multiplication_factor[current_year]
+                        # Now increment the amount
+                        self.amount *= mult_factor
+                        years_incr_applied.append(current_year)
                 # If not applying boosting, keep the deposit amount same
-                amount_deposited = amount
+                amount_deposited = self.amount
             else:
-                assert 0<boost_perc<=0.25, "Boost Percentage should be between 0 and 0.25"
+                assert 0 < boost_perc <= 0.25, "Boost Percentage should be between 0 and 0.25"
                 # Get the percentage change in index
                 perc_change = self.data.loc[i, "Percentage_Change"]
-                incr_boost = boost_perc
-                
-                if perc_change >=0:
-                    amount_deposited = amount
-                elif -5 <= perc_change < 0 :
+
+                if perc_change >= 0:
+                    amount_deposited = self.amount
+                elif -5 <= perc_change < 0:
                     # If perc_change is between 0  to -5, increase deposit amount by 1 * incr_boost
-                    amount_deposited = (1.0 + 1 * incr_boost) * amount
+                    amount_deposited = (1.0 + 1 * incr_boost) * self.amount
                 elif -10 <= perc_change < -5:
                     # If perc_change is between -10 to -20, increase deposit amount by 2 * incr_boost
-                    amount_deposited = (1.0 + 2 * incr_boost) * amount
+                    amount_deposited = (1.0 + 2 * incr_boost) * self.amount
                 elif -15 <= perc_change < -10:
                     # If perc_change is between 20 to 30, increase deposit amount by 3 * incr_boost
-                    amount_deposited = (1.0 + 3 * incr_boost) * amount
-                elif perc_change <-15:
-                    # If perc_change is greater than 15 %, double the deposit                                     
-                    amount_deposited = 2 * amount
-                    
+                    amount_deposited = (1.0 + 3 * incr_boost) * self.amount
+                elif perc_change < -15:
+                    # If perc_change is greater than 15 %, double the deposit
+                    amount_deposited = 2 * self.amount
+
             # Step 1. Add money to account
             self.DepositFunds(amount_deposited)
 
@@ -131,19 +169,40 @@ class Investor:
         return self.data
 
 
-p1 = Investor().InvestMonthly(amount=200, apply_boost=False)
-p2 = Investor().InvestMonthly(amount=200, apply_boost=True, boost_perc = 0.15)
+P1 = Investor()
+p1 = P1.InvestMonthly(amount=200, apply_boost=False)
+P2 = Investor()
+p2 = P2.InvestMonthly(amount=200, apply_boost=True, boost_perc=0.15)
+P3 = Investor()
+p3 = P3.InvestMonthly(
+    amount=200, apply_yearly_increment=True, increment_in_years=15, incr_fac=2)
 
-plt.plot(p1["Asset_Value"], 'r', label = "Strategy 1 (Invest Monthly)")
-plt.plot(p1["Total_Investment"], '--r', label = "Strategy 1: Total Investment")
-plt.plot(p2["Asset_Value"], 'b', label = "Strategy 2 (Apply Monthly Boosting)")
-plt.plot(p2["Total_Investment"], '--b', label = "Strategy 2: Total Investment")
+plt.close("all")
 
-plt.legend(loc = "upper center", fontsize = 14)
-plt.yticks(fontsize = 14)
-plt.ylabel("Amount in $", fontsize = 14)
+plt.plot(p1["Asset_Value"], 'r', label="Strategy 1 (Invest Monthly)")
+plt.plot(p1["Total_Investment"], '--r', label="Strategy 1: Total Investment")
+plt.plot(p2["Asset_Value"], 'b', label="Strategy 2 (Apply Monthly Boosting)")
+plt.plot(p2["Total_Investment"], '--b', label="Strategy 2: Total Investment")
+plt.plot(p3["Asset_Value"], 'g', label="Strategy 3 (Double Investment)")
+plt.plot(p3["Total_Investment"], '--g', label="Strategy 3: Total Investment")
 
-#%%
-#import seaborn as sns 
-#
-#sns.distplot(p1["Percentage_Change"])
+
+plt.legend(loc="upper center", fontsize=14)
+plt.yticks(fontsize=14)
+plt.ylabel("Amount in $", fontsize=14)
+
+
+# %%
+
+# Get number of data points
+n = Investor.total_points - 1
+
+investments = [p1.loc[n, "Total_Investment"],
+               p2.loc[n, "Total_Investment"], p3.loc[n, "Total_Investment"]]
+inv_ret = pd.DataFrame(data=investments, index=[
+                       "S1", "S2", "S3"], columns=["Investments"])
+
+inv_ret["Returns"] = [p1.loc[n, "Asset_Value"],
+                      p2.loc[n, "Asset_Value"], p3.loc[n, "Asset_Value"]]
+
+inv_ret.plot(kind="bar")
