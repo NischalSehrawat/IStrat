@@ -12,21 +12,35 @@ import numpy as np
 
 class Investor:
 
-    data = pd.read_excel("snp.xlsx")  # Read file
-    data["Date"] = pd.to_datetime(data["Date"])
-    # Get percentage changes
-    data["Percentage_Change"] = data["Price"].pct_change() * 100
-    data.fillna(value=0, inplace=True)  # Fill nan values with 0
-    total_points = len(data)  # Total Data points
-    years = sorted(data["Date"].apply(lambda x: x.year).unique().tolist())
-    n_years = len(years)  # Total number of years
-
     def __init__(self):
 
         self.stocks_owned = 0  # Total stocks owned by an investor
         self.available_cash = 0  # Cash remaining after purchasing
         self.total_investment = 0  # Total money invested till date
-        self.data = Investor.data.copy()  # Make a copy of the S&P data
+        self.data = None  # Initialise data holding variable
+
+    @classmethod
+    def PrepareData(cls, index_name):
+        '''
+        This class method is used for preparing the respective dataset
+        '''
+
+        data = pd.read_excel(index_name + ".xlsx")  # Read file
+
+        if index_name == "snp":
+            data["Date"] = pd.to_datetime(
+                data["Date"].apply(lambda x: x.strftime("%d-%m-%Y")))
+        else:
+            data["Date"] = pd.to_datetime(data["Date"])
+        # Get percentage changes
+        data["Percentage_Change"] = data["Price"].pct_change() * 100
+        data.fillna(value=0, inplace=True)  # Fill nan values with 0
+
+        cls.data = data
+        cls.total_points = len(data)  # Total Data points
+        cls.years = sorted(data["Date"].apply(
+            lambda x: x.year).unique().tolist())
+        cls.n_years = len(cls.years)  # Total number of years
 
     def GetReturnRatio(self):
 
@@ -80,6 +94,7 @@ class Investor:
         apply_boost parameter is used to control whether we want to increase the amount 
         invested per month if the index goes down. Default is False
         """
+        self.data = Investor.data.copy()  # Make a copy of the dataset
 
         assert amount is not None, "amount cannot be None in monthly investment strategy, please give an amount"
 
@@ -171,44 +186,40 @@ class Investor:
         return self.data
 
 
-P1 = Investor()
-p1 = P1.InvestMonthly(amount=200, apply_boost=False)
-P2 = Investor()
-p2 = P2.InvestMonthly(amount=200, apply_boost=True, boost_perc=0.20)
+# %%
 
-inc_every = 1
+scale_fac = 100000
+amnt = 5000
+inc_every = 10
 inc_perc = 5
-P3 = Investor()
-p3 = P3.InvestMonthly(
-    amount=200, apply_yearly_increment=True, increment_in_years=inc_every, incr_fac=1 + 0.01*inc_perc)
+
+# Write which dataset you want to use
+Investor().PrepareData('nifty')
+
+p1 = Investor().InvestMonthly(amount=amnt, apply_boost=False)
+p2 = Investor().InvestMonthly(amount=amnt, apply_boost=True, boost_perc=0.20)
+p3 = Investor().InvestMonthly(
+    amount=amnt, apply_yearly_increment=True, increment_in_years=inc_every, incr_fac=1 + 0.01*inc_perc)
 
 plt.close("all")
 
-plt.plot(p1["Asset_Value"] / 1e6, 'r', label="Strategy 1 (Invest Monthly)")
-plt.plot(p1["Total_Investment"] / 1e6, '--r', label="Strategy 1: Total Investment")
-plt.plot(p2["Asset_Value"] / 1e6, 'b', label="Strategy 2 (Apply Monthly Boosting)")
-plt.plot(p2["Total_Investment"] / 1e6, '--b', label="Strategy 2: Total Investment")
-plt.plot(p3["Asset_Value"] / 1e6, 'g',
+
+plt.plot(p1["Date"], p1["Asset_Value"] / scale_fac, 'r',
+         label=f"Strategy 1 (Invest ₹ {amnt} Monthly)")
+plt.plot(p1["Date"], p1["Total_Investment"] / scale_fac,
+         '--r', label="Strategy 1: Total Investment")
+plt.plot(p2["Date"], p2["Asset_Value"] / scale_fac, 'b',
+         label="Strategy 2 (Apply Monthly Boosting)")
+plt.plot(p2["Date"], p2["Total_Investment"] / scale_fac,
+         '--b', label="Strategy 2: Total Investment")
+plt.plot(p3["Date"], p3["Asset_Value"] / scale_fac, 'g',
          label=f"Strategy 3 ({inc_perc}% increase Investment every {inc_every} year)")
-plt.plot(p3["Total_Investment"] / 1e6, '--g', label="Strategy 3: Total Investment")
+plt.plot(p3["Date"], p3["Total_Investment"] / scale_fac,
+         '--g', label="Strategy 3: Total Investment")
 
 
 plt.legend(loc="upper center", fontsize=14)
 plt.yticks(fontsize=14)
-plt.ylabel("Amount in Million USD", fontsize=14)
-
-
-# %%
-
-# Get number of data points
-#n = Investor.total_points - 1
-#
-# investments = [p1.loc[n, "Total_Investment"],
-#               p2.loc[n, "Total_Investment"], p3.loc[n, "Total_Investment"]]
-# inv_ret = pd.DataFrame(data=investments, index=[
-#                       "S1", "S2", "S3"], columns=["Investments"])
-#
-# inv_ret["Returns"] = [p1.loc[n, "Asset_Value"],
-#                      p2.loc[n, "Asset_Value"], p3.loc[n, "Asset_Value"]]
-#
-# inv_ret.plot(kind="bar")
+plt.xticks(fontsize=14)
+plt.xlabel("Years", fontsize=14)
+plt.ylabel("Amount in Lakhs ₹", fontsize=14)
