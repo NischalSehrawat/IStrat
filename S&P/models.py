@@ -12,12 +12,13 @@ import numpy as np
 
 class Investor:
 
-    data_snp = pd.read_excel("blog.xlsx")  # Read file
+    data = pd.read_excel("snp.xlsx")  # Read file
+    data["Date"] = pd.to_datetime(data["Date"])
     # Get percentage changes
-    data_snp["Percentage_Change"] = data_snp["Price_SnP"].pct_change() * 100
-    data_snp.fillna(value=0, inplace=True)  # Fill nan values with 0
-    total_points = len(data_snp)  # Total Data points
-    years = sorted(data_snp["Date"].apply(lambda x: x.year).unique().tolist())
+    data["Percentage_Change"] = data["Price"].pct_change() * 100
+    data.fillna(value=0, inplace=True)  # Fill nan values with 0
+    total_points = len(data)  # Total Data points
+    years = sorted(data["Date"].apply(lambda x: x.year).unique().tolist())
     n_years = len(years)  # Total number of years
 
     def __init__(self):
@@ -25,7 +26,7 @@ class Investor:
         self.stocks_owned = 0  # Total stocks owned by an investor
         self.available_cash = 0  # Cash remaining after purchasing
         self.total_investment = 0  # Total money invested till date
-        self.data = Investor.data_snp.copy()  # Make a copy of the S&P data
+        self.data = Investor.data.copy()  # Make a copy of the S&P data
 
     def GetReturnRatio(self):
 
@@ -138,7 +139,7 @@ class Investor:
             self.DepositFunds(amount_deposited)
 
             # Step 2. Get the stock price
-            stock_price = self.data.loc[i, "Price_SnP"]
+            stock_price = self.data.loc[i, "Price"]
 
             """
             If the stock price is more than the remaining cash, 
@@ -173,27 +174,28 @@ class Investor:
 P1 = Investor()
 p1 = P1.InvestMonthly(amount=200, apply_boost=False)
 P2 = Investor()
-p2 = P2.InvestMonthly(amount=200, apply_boost=True, boost_perc=0.15)
+p2 = P2.InvestMonthly(amount=200, apply_boost=True, boost_perc=0.20)
 
-inc_every = 2
-inc_perc = 10
+inc_every = 1
+inc_perc = 5
 P3 = Investor()
 p3 = P3.InvestMonthly(
     amount=200, apply_yearly_increment=True, increment_in_years=inc_every, incr_fac=1 + 0.01*inc_perc)
 
 plt.close("all")
 
-plt.plot(p1["Asset_Value"], 'r', label="Strategy 1 (Invest Monthly)")
-plt.plot(p1["Total_Investment"], '--r', label="Strategy 1: Total Investment")
-plt.plot(p2["Asset_Value"], 'b', label="Strategy 2 (Apply Monthly Boosting)")
-plt.plot(p2["Total_Investment"], '--b', label="Strategy 2: Total Investment")
-plt.plot(p3["Asset_Value"], 'g', label=f"Strategy 3 ({inc_perc}% increase Investment every {inc_every} year)")
-plt.plot(p3["Total_Investment"], '--g', label="Strategy 3: Total Investment")
+plt.plot(p1["Asset_Value"] / 1e6, 'r', label="Strategy 1 (Invest Monthly)")
+plt.plot(p1["Total_Investment"] / 1e6, '--r', label="Strategy 1: Total Investment")
+plt.plot(p2["Asset_Value"] / 1e6, 'b', label="Strategy 2 (Apply Monthly Boosting)")
+plt.plot(p2["Total_Investment"] / 1e6, '--b', label="Strategy 2: Total Investment")
+plt.plot(p3["Asset_Value"] / 1e6, 'g',
+         label=f"Strategy 3 ({inc_perc}% increase Investment every {inc_every} year)")
+plt.plot(p3["Total_Investment"] / 1e6, '--g', label="Strategy 3: Total Investment")
 
 
 plt.legend(loc="upper center", fontsize=14)
 plt.yticks(fontsize=14)
-plt.ylabel("Amount in $", fontsize=14)
+plt.ylabel("Amount in Million USD", fontsize=14)
 
 
 # %%
@@ -201,12 +203,12 @@ plt.ylabel("Amount in $", fontsize=14)
 # Get number of data points
 #n = Investor.total_points - 1
 #
-#investments = [p1.loc[n, "Total_Investment"],
+# investments = [p1.loc[n, "Total_Investment"],
 #               p2.loc[n, "Total_Investment"], p3.loc[n, "Total_Investment"]]
-#inv_ret = pd.DataFrame(data=investments, index=[
+# inv_ret = pd.DataFrame(data=investments, index=[
 #                       "S1", "S2", "S3"], columns=["Investments"])
 #
-#inv_ret["Returns"] = [p1.loc[n, "Asset_Value"],
+# inv_ret["Returns"] = [p1.loc[n, "Asset_Value"],
 #                      p2.loc[n, "Asset_Value"], p3.loc[n, "Asset_Value"]]
 #
-#inv_ret.plot(kind="bar")
+# inv_ret.plot(kind="bar")
