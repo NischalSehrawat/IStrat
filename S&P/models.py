@@ -188,24 +188,36 @@ class Investor:
 
 # %%
 
-scale_fac = 100000 # Scaling factor for Y axis, for Indian context, set it to 1 lakh, for American 1 million
-amnt = 5000  #EmI
+
+# ================== Adjust parameters here =====================
+index_name = "snp"
+amnt = 300  #EmI
 inc_every = 10 # Years in whcih you wish to increase your emi
 inc_perc = 5 # Percentage increase in EMI after every inc_every time period
+# ========================================= =====================
 
-# Write which dataset you want to use
-Investor().PrepareData('nifty')
+# Initialise the dataset as per index name
+Investor().PrepareData(index_name)
 
-p1 = Investor().InvestMonthly(amount=amnt, apply_boost=False)
+p1 = Investor().InvestMonthly(amount=amnt)
 p2 = Investor().InvestMonthly(amount=amnt, apply_boost=True, boost_perc=0.20)
 p3 = Investor().InvestMonthly(
     amount=amnt, apply_yearly_increment=True, increment_in_years=inc_every, incr_fac=1 + 0.01*inc_perc)
 
 plt.close("all")
 
-
-plt.plot(p1["Date"], p1["Asset_Value"] / scale_fac, 'r',
+if index_name != 'snp':
+    scale_fac = 1e5 # Scaling factor for Y axis, for Indian context, set it to 1 lakh
+    plt.plot(p1["Date"], p1["Asset_Value"] / scale_fac, 'r',
          label=f"Strategy 1 (Invest ₹ {amnt} Monthly)")
+    plt.ylabel("Amount in Lakhs ₹", fontsize=14)
+else:
+    scale_fac = 1e6 # Scaling factor for Y axis for American 1 million
+    plt.plot(p1["Date"], p1["Asset_Value"] / scale_fac, 'r',
+         label=f"Strategy 1 (Invest $ {amnt} Monthly)")
+    plt.ylabel("Amount in Million $", fontsize=14)
+
+
 plt.plot(p1["Date"], p1["Total_Investment"] / scale_fac,
          '--r', label="Strategy 1: Total Investment")
 plt.plot(p2["Date"], p2["Asset_Value"] / scale_fac, 'b',
@@ -222,4 +234,3 @@ plt.legend(loc="upper center", fontsize=14)
 plt.yticks(fontsize=14)
 plt.xticks(fontsize=14)
 plt.xlabel("Years", fontsize=14)
-plt.ylabel("Amount in Lakhs ₹", fontsize=14)
