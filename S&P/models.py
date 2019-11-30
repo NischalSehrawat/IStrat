@@ -188,10 +188,10 @@ class Investor:
 
 # %%
 
-scale_fac = 100000
-amnt = 5000
-inc_every = 10
-inc_perc = 5
+scale_fac = 100000 # Scaling factor for Y axis, for Indian context, set it to 1 lakh, for American 1 million
+amnt = 5000  #EmI
+inc_every = 10 # Years in whcih you wish to increase your emi
+inc_perc = 5 # Percentage increase in EMI after every inc_every time period
 
 # Write which dataset you want to use
 Investor().PrepareData('nifty')
