@@ -89,10 +89,25 @@ class Investor:
 
     def InvestMonthly(self, amount=200, apply_boost=False, boost_perc=1e-12, apply_yearly_increment=False, increment_in_years=None, incr_fac=None):
         """
-        In this strategy we invest on a fixed day i.e. 1st of every month.
-        Amount is the value invested monthly, default value being 200
-        apply_boost parameter is used to control whether we want to increase the amount 
-        invested per month if the index goes down. Default is False
+        There are 3 strategies implemented in the monthly investment plan
+        1. The first strategy is to just keep on investing a fixed sum each month, irrespective of 
+            the market conditions.
+        2. The second strategy is to adjust the first strategy as per market. Invest more when the market drops
+            and keep the amount same when market recovers
+        3. The last strategy is to increase the amount invested each month after every "Y" ears by "X" percent. 
+            This is done to account for the fact that with time, salaries also increase and we can invest more
+
+        The following are the parameters of the function
+        
+        amount: The value invested monthly, default value being 200
+        apply_boost:  Parameter is used to control whether we want to increase the amount in 2nd strategy
+        boost_perc:  Parameter is used to control the increased the amount in 2nd strategy. It can have a max value of 0.25
+        apply_yearly_increment: Parameter to apply Strategy #3
+        increment_in_years: Parameter to specify the numbey of years after which you want to increase the monthly investment
+        incr_fac: Parameter to specify the factor that must be multiplied by the last EMI to amplify it
+        
+        The function returns the dataframe with logged values
+
         """
         self.data = Investor.data.copy()  # Make a copy of the dataset
 
