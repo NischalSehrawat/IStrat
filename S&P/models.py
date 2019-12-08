@@ -170,12 +170,12 @@ class Investor:
 
 
 P1 = Investor()
-p1 = P1.InvestMonthly(amount=200, apply_boost=False)
+p1 = P1.InvestMonthly(amount=300, apply_boost=False)
 P2 = Investor()
-p2 = P2.InvestMonthly(amount=200, apply_boost=True, boost_perc=0.15)
+p2 = P2.InvestMonthly(amount=300, apply_boost=True, boost_perc=0.15)
 P3 = Investor()
 p3 = P3.InvestMonthly(
-    amount=200, apply_yearly_increment=True, increment_in_years=15, incr_fac=2)
+    amount=300, apply_yearly_increment=True, increment_in_years=20, incr_fac=2)
 
 plt.close("all")
 
@@ -190,6 +190,19 @@ plt.plot(p3["Total_Investment"], '--g', label="Strategy 3: Total Investment")
 plt.legend(loc="upper center", fontsize=14)
 plt.yticks(fontsize=14)
 plt.ylabel("Amount in $", fontsize=14)
+
+#%%
+
+
+pct = p1.loc[:, "Percentage_Change"]
+
+import seaborn as sns 
+
+plt.plot(pct)
+
+plt.figure()
+
+sns.distplot(pct)
 
 
 # %%
