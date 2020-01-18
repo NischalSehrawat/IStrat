@@ -199,14 +199,24 @@ class Investor:
                 self.LogData(i, stock_price, stocks_acquired)
 
         return self.data
+    
+    def GetCagr(self):
+        
+        Asset_Value = self.data.iloc[-1]["Asset_Value"] 
+        Total_Investment = self.data.iloc[-1]["Total_Investment"] 
+        
+        return 100*((Asset_Value/Total_Investment)**(1/Investor.n_years) - 1)
+
+
+        
 
 
 # %%
 
 
 # ================== Adjust parameters here =====================
-index_name = "snp"
-amnt = 300  #EmI
+index_name = "nifty"
+amnt = 15000  #EmI
 inc_every = 10 # Years in whcih you wish to increase your emi
 inc_perc = 5 # Percentage increase in EMI after every inc_every time period
 # ========================================= =====================
@@ -214,9 +224,14 @@ inc_perc = 5 # Percentage increase in EMI after every inc_every time period
 # Initialise the dataset as per index name
 Investor().PrepareData(index_name)
 
-p1 = Investor().InvestMonthly(amount=amnt)
-p2 = Investor().InvestMonthly(amount=amnt, apply_boost=True, boost_perc=0.20)
-p3 = Investor().InvestMonthly(
+P1 = Investor();
+P2 = Investor()
+P3 = Investor()
+
+
+p1 = P1.InvestMonthly(amount=amnt)
+p2 = P2.InvestMonthly(amount=amnt, apply_boost=True, boost_perc=0.20)
+p3 = P3.InvestMonthly(
     amount=amnt, apply_yearly_increment=True, increment_in_years=inc_every, incr_fac=1 + 0.01*inc_perc)
 
 plt.close("all")
@@ -224,7 +239,7 @@ plt.close("all")
 if index_name != 'snp':
     scale_fac = 1e5 # Scaling factor for Y axis, for Indian context, set it to 1 lakh
     plt.plot(p1["Date"], p1["Asset_Value"] / scale_fac, 'r',
-         label=f"Strategy 1 (Invest ₹ {amnt} Monthly)")
+         label=f"Strategy 1 (Invest ₹ {amnt} Monthly, CAGR = {format(P1.GetCagr(),'.2f')} %)")
     plt.ylabel("Amount in Lakhs ₹", fontsize=14)
 else:
     scale_fac = 1e6 # Scaling factor for Y axis for American 1 million
@@ -236,11 +251,11 @@ else:
 plt.plot(p1["Date"], p1["Total_Investment"] / scale_fac,
          '--r', label="Strategy 1: Total Investment")
 plt.plot(p2["Date"], p2["Asset_Value"] / scale_fac, 'b',
-         label="Strategy 2 (Apply Monthly Boosting)")
+         label=f"Strategy 2 (Apply Monthly Boosting, CAGR = {format(P2.GetCagr(),'.2f')} %)")
 plt.plot(p2["Date"], p2["Total_Investment"] / scale_fac,
          '--b', label="Strategy 2: Total Investment")
 plt.plot(p3["Date"], p3["Asset_Value"] / scale_fac, 'g',
-         label=f"Strategy 3 ({inc_perc}% increase Investment every {inc_every} year)")
+         label=f"Strategy 3 ({inc_perc}% increase Investment every {inc_every} year, CAGR = {format(P3.GetCagr(),'.2f')} %)")
 plt.plot(p3["Date"], p3["Total_Investment"] / scale_fac,
          '--g', label="Strategy 3: Total Investment")
 
@@ -249,3 +264,22 @@ plt.legend(loc="upper center", fontsize=14)
 plt.yticks(fontsize=14)
 plt.xticks(fontsize=14)
 plt.xlabel("Years", fontsize=14)
+
+for investor in  [P1, P2, P3]:
+    
+    print(investor.GetCagr())
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
