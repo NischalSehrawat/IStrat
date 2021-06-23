@@ -20,12 +20,14 @@ class Investor:
         self.data = None  # Initialise data holding variable
 
     @classmethod
-    def PrepareData(cls, index_name):
+    def prepare_data(cls, index_name):
         '''
         This class method is used for preparing the respective dataset
         '''
 
-        data = pd.read_excel(index_name + ".xlsx")  # Read file
+        file_path = "C:/Users/nisch/Documents/GitHub/IStrat/S&P/" + index_name + ".xlsx"
+
+        data = pd.read_excel(file_path)  # Read file
 
         if index_name == "snp":
             data["Date"] = pd.to_datetime(
@@ -42,7 +44,7 @@ class Investor:
             lambda x: x.year).unique().tolist())
         cls.n_years = len(cls.years)  # Total number of years
 
-    def GetReturnRatio(self):
+    def get_return_ratio(self):
 
         num_el = len(self.data)  # Number of elements in the dataset
         # Return on investment ratio
@@ -50,20 +52,20 @@ class Investor:
             self.data.loc[num_el - 1, "Total_Investment"]
         return np.round(roi_ratio, 2)
 
-    def GetAssetValue(self, stock_price):
+    def get_asset_value(self, stock_price):
         # This function is used to update total assets
         asset_value = self.available_cash + stock_price * self.stocks_owned
         return asset_value
 
-    def LogData(self, idx, stock_price, stocks_acquired):
+    def log_data(self, idx, stock_price, stocks_acquired):
         # This function is used to log data to dataframe on any given day = idx
-        self.data.loc[idx, "Asset_Value"] = self.GetAssetValue(stock_price)
+        self.data.loc[idx, "Asset_Value"] = self.get_asset_value(stock_price)
         self.data.loc[idx, "Stocks_Owned"] = self.stocks_owned
         self.data.loc[idx, "Stocks_Acquired"] = stocks_acquired
         self.data.loc[idx, "Available_Cash"] = self.available_cash
         self.data.loc[idx, "Total_Investment"] = self.total_investment
 
-    def BuyStocks(self, stock_price):
+    def buy_stocks(self, stock_price):
         '''
         This function is used to update stocks owned and available cash whenever stocks are bought
         and return the amount of stocks bought
@@ -78,7 +80,7 @@ class Investor:
 
         return stocks_acquired
 
-    def DepositFunds(self, amount):
+    def deposit_funds(self, amount):
         '''
         This function is used to update the total investments and available cash
         when money is deposited in the account
@@ -87,7 +89,7 @@ class Investor:
         self.total_investment += amount
         self.available_cash += amount
 
-    def InvestMonthly(self, amount=200, apply_boost=False, boost_perc=1e-12, apply_yearly_increment=False, increment_in_years=None, incr_fac=None):
+    def invest_monthly(self, amount=200, apply_boost=False, boost_perc=1e-12, apply_yearly_increment=False, increment_in_years=None, incr_fac=None):
         """
         There are 3 strategies implemented in the monthly investment plan
         1. The first strategy is to just keep on investing a fixed sum each month, irrespective of 
@@ -166,7 +168,7 @@ class Investor:
                     amount_deposited = 2 * self.amount
 
             # Step 1. Add money to account
-            self.DepositFunds(amount_deposited)
+            self.deposit_funds(amount_deposited)
 
             # Step 2. Get the stock price
             stock_price = self.data.loc[i, "Price"]
@@ -183,7 +185,7 @@ class Investor:
                 stocks_acquired = 0
 
                 # Log data to the dataframe
-                self.LogData(i, stock_price, stocks_acquired)
+                self.log_data(i, stock_price, stocks_acquired)
 
             else:
                 """
@@ -193,45 +195,31 @@ class Investor:
                 """
 
                 # Buy Stocks
-                stocks_acquired = self.BuyStocks(stock_price)
+                stocks_acquired = self.buy_stocks(stock_price)
 
                 # Log data to dataframe
-                self.LogData(i, stock_price, stocks_acquired)
+                self.log_data(i, stock_price, stocks_acquired)
 
         return self.data
     
-    def GetCagr(self):
-        
-        Asset_Value = self.data.iloc[-1]["Asset_Value"] 
-        Total_Investment = self.data.iloc[-1]["Total_Investment"] 
-        
-        return 100*((Asset_Value/Total_Investment)**(1/Investor.n_years) - 1)
-
-
-        
-
-
-# %%
-
-
 # ================== Adjust parameters here =====================
-index_name = "nifty"
-amnt = 15000  #EmI
+index_name = "snp"
+amnt = 1000  #EmI
 inc_every = 10 # Years in whcih you wish to increase your emi
 inc_perc = 5 # Percentage increase in EMI after every inc_every time period
 # ========================================= =====================
 
 # Initialise the dataset as per index name
-Investor().PrepareData(index_name)
+Investor().prepare_data(index_name)
 
-P1 = Investor();
+P1 = Investor()
 P2 = Investor()
 P3 = Investor()
 
 
-p1 = P1.InvestMonthly(amount=amnt)
-p2 = P2.InvestMonthly(amount=amnt, apply_boost=True, boost_perc=0.20)
-p3 = P3.InvestMonthly(
+p1 = P1.invest_monthly(amount=amnt)
+p2 = P2.invest_monthly(amount=amnt, apply_boost=True, boost_perc=0.20)
+p3 = P3.invest_monthly(
     amount=amnt, apply_yearly_increment=True, increment_in_years=inc_every, incr_fac=1 + 0.01*inc_perc)
 
 plt.close("all")
@@ -239,7 +227,7 @@ plt.close("all")
 if index_name != 'snp':
     scale_fac = 1e5 # Scaling factor for Y axis, for Indian context, set it to 1 lakh
     plt.plot(p1["Date"], p1["Asset_Value"] / scale_fac, 'r',
-         label=f"Strategy 1 (Invest ₹ {amnt} Monthly, CAGR = {format(P1.GetCagr(),'.2f')} %)")
+         label=f"Strategy 1 (Invest ₹ {amnt} Monthly, CAGR = {format(P1.get_cagr(),'.2f')} %)")
     plt.ylabel("Amount in Lakhs ₹", fontsize=14)
 else:
     scale_fac = 1e6 # Scaling factor for Y axis for American 1 million
@@ -251,11 +239,11 @@ else:
 plt.plot(p1["Date"], p1["Total_Investment"] / scale_fac,
          '--r', label="Strategy 1: Total Investment")
 plt.plot(p2["Date"], p2["Asset_Value"] / scale_fac, 'b',
-         label=f"Strategy 2 (Apply Monthly Boosting, CAGR = {format(P2.GetCagr(),'.2f')} %)")
+         label=f"Strategy 2 (Apply Monthly Boosting)")
 plt.plot(p2["Date"], p2["Total_Investment"] / scale_fac,
          '--b', label="Strategy 2: Total Investment")
 plt.plot(p3["Date"], p3["Asset_Value"] / scale_fac, 'g',
-         label=f"Strategy 3 ({inc_perc}% increase Investment every {inc_every} year, CAGR = {format(P3.GetCagr(),'.2f')} %)")
+         label=f"Strategy 3 ({inc_perc}% increase Investment every {inc_every} year)")
 plt.plot(p3["Date"], p3["Total_Investment"] / scale_fac,
          '--g', label="Strategy 3: Total Investment")
 
@@ -265,9 +253,7 @@ plt.yticks(fontsize=14)
 plt.xticks(fontsize=14)
 plt.xlabel("Years", fontsize=14)
 
-for investor in  [P1, P2, P3]:
-    
-    print(investor.GetCagr())
+plt.show()
     
     
     
