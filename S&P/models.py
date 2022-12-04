@@ -12,22 +12,39 @@ import numpy as np
 
 class Investor:
 
-    data_snp = pd.read_excel("blog.xlsx")  # Read file
-    # Get percentage changes
-    data_snp["Percentage_Change"] = data_snp["Price_SnP"].pct_change() * 100
-    data_snp.fillna(value=0, inplace=True)  # Fill nan values with 0
-    total_points = len(data_snp)  # Total Data points
-    years = sorted(data_snp["Date"].apply(lambda x: x.year).unique().tolist())
-    n_years = len(years)  # Total number of years
-
     def __init__(self):
 
         self.stocks_owned = 0  # Total stocks owned by an investor
         self.available_cash = 0  # Cash remaining after purchasing
         self.total_investment = 0  # Total money invested till date
-        self.data = Investor.data_snp.copy()  # Make a copy of the S&P data
+        self.data = None  # Initialise data holding variable
 
-    def GetReturnRatio(self):
+    @classmethod
+    def prepare_data(cls, index_name):
+        '''
+        This class method is used for preparing the respective dataset
+        '''
+
+        file_path = "C:/Users/nisch/Documents/GitHub/IStrat/S&P/" + index_name + ".xlsx"
+
+        data = pd.read_excel(file_path)  # Read file
+
+        if index_name == "snp":
+            data["Date"] = pd.to_datetime(
+                data["Date"].apply(lambda x: x.strftime("%d-%m-%Y")))
+        else:
+            data["Date"] = pd.to_datetime(data["Date"])
+        # Get percentage changes
+        data["Percentage_Change"] = data["Price"].pct_change() * 100
+        data.fillna(value=0, inplace=True)  # Fill nan values with 0
+
+        cls.data = data
+        cls.total_points = len(data)  # Total Data points
+        cls.years = sorted(data["Date"].apply(
+            lambda x: x.year).unique().tolist())
+        cls.n_years = len(cls.years)  # Total number of years
+
+    def get_return_ratio(self):
 
         num_el = len(self.data)  # Number of elements in the dataset
         # Return on investment ratio
@@ -35,20 +52,20 @@ class Investor:
             self.data.loc[num_el - 1, "Total_Investment"]
         return np.round(roi_ratio, 2)
 
-    def GetAssetValue(self, stock_price):
+    def get_asset_value(self, stock_price):
         # This function is used to update total assets
         asset_value = self.available_cash + stock_price * self.stocks_owned
         return asset_value
 
-    def LogData(self, idx, stock_price, stocks_acquired):
+    def log_data(self, idx, stock_price, stocks_acquired):
         # This function is used to log data to dataframe on any given day = idx
-        self.data.loc[idx, "Asset_Value"] = self.GetAssetValue(stock_price)
+        self.data.loc[idx, "Asset_Value"] = self.get_asset_value(stock_price)
         self.data.loc[idx, "Stocks_Owned"] = self.stocks_owned
         self.data.loc[idx, "Stocks_Acquired"] = stocks_acquired
         self.data.loc[idx, "Available_Cash"] = self.available_cash
         self.data.loc[idx, "Total_Investment"] = self.total_investment
 
-    def BuyStocks(self, stock_price):
+    def buy_stocks(self, stock_price):
         '''
         This function is used to update stocks owned and available cash whenever stocks are bought
         and return the amount of stocks bought
@@ -63,7 +80,7 @@ class Investor:
 
         return stocks_acquired
 
-    def DepositFunds(self, amount):
+    def deposit_funds(self, amount):
         '''
         This function is used to update the total investments and available cash
         when money is deposited in the account
@@ -72,17 +89,31 @@ class Investor:
         self.total_investment += amount
         self.available_cash += amount
 
-    def InvestMonthly(self, amount=200, apply_boost=False, boost_perc=1e-12, apply_yearly_increment=False, increment_in_years=None, incr_fac=None):
+    def invest_monthly(self, amount=200, apply_boost=False, boost_perc=1e-12, apply_yearly_increment=False, increment_in_years=None, incr_fac=None):
         """
-        In this strategy we invest on a fixed day i.e. 1st of every month.
-        Amount is the value invested monthly, default value being 200
-        apply_boost parameter is used to control whether we want to increase the amount 
-        invested per month if the index goes down. Default is False
+        There are 3 strategies implemented in the monthly investment plan
+        1. The first strategy is to just keep on investing a fixed sum each month, irrespective of 
+            the market conditions.
+        2. The second strategy is to adjust the first strategy as per market. Invest more when the market drops
+            and keep the amount same when market recovers
+        3. The last strategy is to increase the amount invested each month after every "Y" ears by "X" percent. 
+            This is done to account for the fact that with time, salaries also increase and we can invest more
+
+        The following are the parameters of the function
+        
+        amount: The value invested monthly, default value being 200
+        apply_boost:  Parameter is used to control whether we want to increase the amount in 2nd strategy
+        boost_perc:  Parameter is used to control the increased the amount in 2nd strategy. It can have a max value of 0.25
+        apply_yearly_increment: Parameter to apply Strategy #3
+        increment_in_years: Parameter to specify the numbey of years after which you want to increase the monthly investment
+        incr_fac: Parameter to specify the factor that must be multiplied by the last EMI to amplify it
+        
+        The function returns the dataframe with logged values
+
         """
+        self.data = Investor.data.copy()  # Make a copy of the dataset
 
         assert amount is not None, "amount cannot be None in monthly investment strategy, please give an amount"
-
-        self.amount = amount
 
         if apply_yearly_increment:
             assert increment_in_years is not None, "increment in years can't be none, please give a value"
@@ -90,17 +121,20 @@ class Investor:
             assert increment_in_years < Investor.n_years, " increment in years can't be greater than the total number of years"
             total_years = Investor.years  # Get total number of years
             # Select years when the amount will be doubled. Start from 1 as we won't double the investment from starting year
-            incremental_years = total_years[::increment_in_years][1:]
+            incremental_years = total_years[::increment_in_years]
             years_multiplication_factor = {
-                year: (k+1)*incr_fac for k, year in enumerate(incremental_years)}
+                year: incr_fac**(k) for k, year in enumerate(incremental_years)}
 
         incr_boost = boost_perc  # Assign boost_incr to incr_boost variable
         # List that will store the years when increment has already been applied
         years_incr_applied = []
 
-        for i in range(Investor.total_points):
+        self.amount = amount
 
+        for i in range(Investor.total_points):
+            # If we are doing only normal monthly investment
             if not apply_boost:
+                # If we are increasing the amount as years go by along with systematic monthly investments
                 if apply_yearly_increment:
                     # Get current year
                     current_year = self.data.loc[i, "Date"].year
@@ -109,7 +143,7 @@ class Investor:
                         # Get the multiplication factor
                         mult_factor = years_multiplication_factor[current_year]
                         # Now increment the amount
-                        self.amount *= mult_factor
+                        self.amount = mult_factor * amount
                         years_incr_applied.append(current_year)
                 # If not applying boosting, keep the deposit amount same
                 amount_deposited = self.amount
@@ -134,10 +168,10 @@ class Investor:
                     amount_deposited = 2 * self.amount
 
             # Step 1. Add money to account
-            self.DepositFunds(amount_deposited)
+            self.deposit_funds(amount_deposited)
 
             # Step 2. Get the stock price
-            stock_price = self.data.loc[i, "Price_SnP"]
+            stock_price = self.data.loc[i, "Price"]
 
             """
             If the stock price is more than the remaining cash, 
@@ -151,7 +185,7 @@ class Investor:
                 stocks_acquired = 0
 
                 # Log data to the dataframe
-                self.LogData(i, stock_price, stocks_acquired)
+                self.log_data(i, stock_price, stocks_acquired)
 
             else:
                 """
@@ -161,61 +195,77 @@ class Investor:
                 """
 
                 # Buy Stocks
-                stocks_acquired = self.BuyStocks(stock_price)
+                stocks_acquired = self.buy_stocks(stock_price)
 
                 # Log data to dataframe
-                self.LogData(i, stock_price, stocks_acquired)
+                self.log_data(i, stock_price, stocks_acquired)
 
         return self.data
+    
+# ================== Adjust parameters here =====================
+index_name = "snp"
+amnt = 1000  #EmI
+inc_every = 10 # Years in whcih you wish to increase your emi
+inc_perc = 5 # Percentage increase in EMI after every inc_every time period
+# ========================================= =====================
 
+# Initialise the dataset as per index name
+Investor().prepare_data(index_name)
 
 P1 = Investor()
-p1 = P1.InvestMonthly(amount=300, apply_boost=False)
 P2 = Investor()
-p2 = P2.InvestMonthly(amount=300, apply_boost=True, boost_perc=0.15)
 P3 = Investor()
-p3 = P3.InvestMonthly(
-    amount=300, apply_yearly_increment=True, increment_in_years=20, incr_fac=2)
+
+
+p1 = P1.invest_monthly(amount=amnt)
+p2 = P2.invest_monthly(amount=amnt, apply_boost=True, boost_perc=0.20)
+p3 = P3.invest_monthly(
+    amount=amnt, apply_yearly_increment=True, increment_in_years=inc_every, incr_fac=1 + 0.01*inc_perc)
 
 plt.close("all")
 
-plt.plot(p1["Asset_Value"], 'r', label="Strategy 1 (Invest Monthly)")
-plt.plot(p1["Total_Investment"], '--r', label="Strategy 1: Total Investment")
-plt.plot(p2["Asset_Value"], 'b', label="Strategy 2 (Apply Monthly Boosting)")
-plt.plot(p2["Total_Investment"], '--b', label="Strategy 2: Total Investment")
-plt.plot(p3["Asset_Value"], 'g', label="Strategy 3 (Double Investment)")
-plt.plot(p3["Total_Investment"], '--g', label="Strategy 3: Total Investment")
+if index_name != 'snp':
+    scale_fac = 1e5 # Scaling factor for Y axis, for Indian context, set it to 1 lakh
+    plt.plot(p1["Date"], p1["Asset_Value"] / scale_fac, 'r',
+         label=f"Strategy 1 (Invest ₹ {amnt} Monthly, CAGR = {format(P1.get_cagr(),'.2f')} %)")
+    plt.ylabel("Amount in Lakhs ₹", fontsize=14)
+else:
+    scale_fac = 1e6 # Scaling factor for Y axis for American 1 million
+    plt.plot(p1["Date"], p1["Asset_Value"] / scale_fac, 'r',
+         label=f"Strategy 1 (Invest $ {amnt} Monthly)")
+    plt.ylabel("Amount in Million $", fontsize=14)
+
+
+plt.plot(p1["Date"], p1["Total_Investment"] / scale_fac,
+         '--r', label="Strategy 1: Total Investment")
+plt.plot(p2["Date"], p2["Asset_Value"] / scale_fac, 'b',
+         label=f"Strategy 2 (Apply Monthly Boosting)")
+plt.plot(p2["Date"], p2["Total_Investment"] / scale_fac,
+         '--b', label="Strategy 2: Total Investment")
+plt.plot(p3["Date"], p3["Asset_Value"] / scale_fac, 'g',
+         label=f"Strategy 3 ({inc_perc}% increase Investment every {inc_every} year)")
+plt.plot(p3["Date"], p3["Total_Investment"] / scale_fac,
+         '--g', label="Strategy 3: Total Investment")
 
 
 plt.legend(loc="upper center", fontsize=14)
 plt.yticks(fontsize=14)
-plt.ylabel("Amount in $", fontsize=14)
+plt.xticks(fontsize=14)
+plt.xlabel("Years", fontsize=14)
 
-#%%
-
-
-pct = p1.loc[:, "Percentage_Change"]
-
-import seaborn as sns 
-
-plt.plot(pct)
-
-plt.figure()
-
-sns.distplot(pct)
-
-
-# %%
-
-# Get number of data points
-n = Investor.total_points - 1
-
-investments = [p1.loc[n, "Total_Investment"],
-               p2.loc[n, "Total_Investment"], p3.loc[n, "Total_Investment"]]
-inv_ret = pd.DataFrame(data=investments, index=[
-                       "S1", "S2", "S3"], columns=["Investments"])
-
-inv_ret["Returns"] = [p1.loc[n, "Asset_Value"],
-                      p2.loc[n, "Asset_Value"], p3.loc[n, "Asset_Value"]]
-
-inv_ret.plot(kind="bar")
+plt.show()
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
